@@ -7,6 +7,11 @@ services:
       POSTGRES_PASSWORD: radar_vagas
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radar_vagas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
@@ -25,7 +30,8 @@ services:
       DB_USER: radar_vagas
       DB_PASSWORD: radar_vagas
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
