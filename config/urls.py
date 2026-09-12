@@ -7,6 +7,7 @@ from vagas.views import FonteViewSet, VagaViewSet
 from skills.views import SkillViewSet, VagaSkillViewSet, SkillRankingView, SkillGapView
 from perfil.views import PerfilTecnicoViewSet
 from historico.views import HistoricoSkillViewSet
+from dashboard.views import DashboardView
 
 router = DefaultRouter()
 router.register("fontes", FonteViewSet)
@@ -17,6 +18,7 @@ router.register("perfil", PerfilTecnicoViewSet)
 router.register("historico", HistoricoSkillViewSet, basename="historico")
 
 urlpatterns = [
+    path("", DashboardView.as_view(), name="dashboard"),
     path("admin/", admin.site.urls),
     path("api/skills/ranking/", SkillRankingView.as_view()),
     path("api/skills/gap/", SkillGapView.as_view()),
@@ -24,4 +26,5 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("api-auth/", include("rest_framework.urls")),
 ]

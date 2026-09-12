@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Radar de Vagas Jr Dev</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #111; color: #eee; }
+        h1 { margin-bottom: 4px; }
+        .subtitulo { color: #999; margin-bottom: 32px; }
+        .grafico-container { max-width: 800px; margin-bottom: 48px; }
+    </style>
+</head>
+<body>
+    <h1>Radar de Vagas Jr Dev</h1>
+    <p class="subtitulo">Skills mais pedidas no mercado vs. o que eu já tenho</p>
+
+    <div class="grafico-container">
+        <h2>Ranking de skills</h2>
+        <canvas id="graficoRanking"></canvas>
+    </div>
+
+    <div class="grafico-container">
+        <h2>Gap de conhecimento</h2>
+        <canvas id="graficoGap"></canvas>
+    </div>
+
+    <script>
+        async function carregarRanking() {
+            const resposta = await fetch("/api/skills/ranking/");
+            const dados = await resposta.json();
+            const top = dados.slice(0, 10);
+
+            new Chart(document.getElementById("graficoRanking"), {
+                type: "bar",
+                data: {
+                    labels: top.map(item => item.skill__nome_normalizado),
+                    datasets: [{
+                        label: "Vagas que mencionam a skill",
+                        data: top.map(item => item.total_vagas),
+                        backgroundColor: "#4f9dde",
+                    }],
+                },
+                options: { indexAxis: "y" },
+            });
+        }
+
+        async function carregarGap() {
+            const resposta = await fetch("/api/skills/gap/");
+            const dados = await resposta.json();
+            const top = dados.slice(0, 10);
+
+            new Chart(document.getElementById("graficoGap"), {
+                type: "bar",
+                data: {
+                    labels: top.map(item => item.skill),
+                    datasets: [{
+                        label: "Vagas que pedem, mas eu ainda não tenho",
+                        data: top.map(item => item.total_vagas),
+                        backgroundColor: "#e07856",
+                    }],
+                },
+                options: { indexAxis: "y" },
+            });
+        }
+
+        carregarRanking();
+        carregarGap();
+    </script>
+</body>
+</html>

@@ -18,3 +18,10 @@ def test_extrair_skills_ignora_substring_parcial():
     Skill.objects.create(nome_normalizado="Java")
     resultado = extrair_skills("Vaga para dev JavaScript")
     assert list(resultado.items()) == []
+
+@pytest.mark.django_db
+def test_extrair_skills_reconhece_sinonimo():
+    Skill.objects.create(nome_normalizado="React")
+    resultado = extrair_skills("Vaga para dev ReactJS")
+    nomes = {skill.nome_normalizado: oc for skill, oc in resultado.items()}
+    assert nomes["React"] == 1
