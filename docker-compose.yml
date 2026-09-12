@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: radar_vagas
+      POSTGRES_USER: radar_vagas
+      POSTGRES_PASSWORD: radar_vagas
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_skills &&
+             python manage.py seed_perfil &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_NAME: radar_vagas
+      DB_USER: radar_vagas
+      DB_PASSWORD: radar_vagas
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
