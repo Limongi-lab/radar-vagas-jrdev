@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'skills',
     'perfil',
     'historico',
+    'candidaturas',
 ]
 
 MIDDLEWARE = [

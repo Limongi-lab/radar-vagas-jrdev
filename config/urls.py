@@ -8,6 +8,7 @@ from skills.views import SkillViewSet, VagaSkillViewSet, SkillRankingView, Skill
 from perfil.views import PerfilTecnicoViewSet
 from historico.views import HistoricoSkillViewSet
 from dashboard.views import DashboardView
+from candidaturas.views import CandidaturaViewSet
 
 router = DefaultRouter()
 router.register("fontes", FonteViewSet)
@@ -16,6 +17,7 @@ router.register("skills", SkillViewSet)
 router.register("vaga-skills", VagaSkillViewSet)
 router.register("perfil", PerfilTecnicoViewSet)
 router.register("historico", HistoricoSkillViewSet, basename="historico")
+router.register("candidaturas", CandidaturaViewSet)
 
 urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),

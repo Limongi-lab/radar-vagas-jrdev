@@ -1,71 +1,354 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Radar de Vagas Jr Dev</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: sans-serif; margin: 40px; background: #111; color: #eee; }
-        h1 { margin-bottom: 4px; }
-        .subtitulo { color: #999; margin-bottom: 32px; }
-        .grafico-container { max-width: 800px; margin-bottom: 48px; }
-    </style>
+<meta charset="UTF-8">
+<title>Radar de Vagas Jr Dev</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --bg: #0d1512;
+        --bg-raised: #131f1a;
+        --bg-sidebar: #0a100d;
+        --text: #e4ded0;
+        --text-muted: #7f9188;
+        --accent: #e8a33d;
+        --accent-dim: #7a5a26;
+        --secondary: #4a9b8e;
+        --positive: #7fae5c;
+        --border: rgba(232, 163, 61, 0.16);
+    }
+    * { box-sizing: border-box; }
+    body {
+        font-family: 'JetBrains Mono', monospace;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        line-height: 1.55;
+    }
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+        width: 240px;
+        flex-shrink: 0;
+        background: var(--bg-sidebar);
+        border-right: 1px solid var(--border);
+        padding: 32px 20px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
+    .sweep-mini {
+        width: 22px; height: 22px; border-radius: 50%;
+        border: 1px solid var(--accent-dim); position: relative; overflow: hidden; flex-shrink: 0;
+    }
+    .sweep-mini::before {
+        content: ""; position: absolute; inset: 0;
+        background: conic-gradient(from 0deg, rgba(232,163,61,0.7), transparent 60deg);
+        animation: sweep-rotate 3s linear infinite;
+    }
+    @keyframes sweep-rotate { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .sweep-mini::before { animation: none; } }
+    .brand span { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; }
+
+    .nav-item {
+        display: block; width: 100%; text-align: left;
+        background: none; border: none; border-left: 2px solid transparent;
+        color: var(--text-muted); font-family: 'JetBrains Mono', monospace;
+        font-size: 13px; padding: 10px 14px; margin-bottom: 4px;
+        cursor: pointer; border-radius: 0 4px 4px 0;
+    }
+    .nav-item:hover { color: var(--text); background: rgba(232,163,61,0.06); }
+    .nav-item.active {
+        color: var(--accent); border-left-color: var(--accent);
+        background: rgba(232,163,61,0.08); font-weight: 500;
+    }
+
+    main { flex: 1; padding: 48px 56px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; margin: 0 0 6px; }
+    .panel .contexto { color: var(--text-muted); font-size: 13px; margin: 0 0 32px; max-width: 55ch; }
+
+    .panel-body { display: flex; gap: 56px; align-items: flex-start; }
+    .panel-main { flex: 1; min-width: 0; max-width: 640px; }
+    .rail { width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 22px; padding-top: 4px; }
+    .stat { border-top: 1px solid var(--border); padding-top: 10px; }
+    .stat .valor { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; color: var(--accent); line-height: 1.1; }
+    .stat .valor.dim { color: var(--secondary); }
+    .stat .rotulo { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .lista-gap { list-style: none; padding: 0; margin: 0; counter-reset: gap-counter; }
+    .lista-gap li {
+        counter-increment: gap-counter;
+        display: flex; align-items: baseline; gap: 16px;
+        padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .lista-gap li::before {
+        content: counter(gap-counter, decimal-leading-zero);
+        color: var(--accent-dim); font-size: 13px; width: 24px;
+    }
+    .lista-gap .nome { flex: 1; }
+    .lista-gap .contagem { color: var(--text-muted); font-size: 13px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-weight: 500; color: var(--text-muted); padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: var(--bg-raised); }
+    .nivel, .status { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+    .nivel-junior { background: rgba(232, 163, 61, 0.18); color: var(--accent); }
+    .nivel-pleno { background: rgba(127, 145, 136, 0.18); color: var(--text-muted); }
+    .nivel-senior { background: rgba(122, 90, 38, 0.25); color: #c08a4a; }
+    .nivel-nao_informado { color: var(--text-muted); opacity: 0.55; }
+    .status-quero_aplicar { background: rgba(232, 163, 61, 0.18); color: var(--accent); }
+    .status-aplicado { background: rgba(74, 155, 142, 0.18); color: var(--secondary); }
+    .status-entrevista { background: rgba(74, 155, 142, 0.32); color: #7fd3c4; }
+    .status-recusado { color: var(--text-muted); opacity: 0.55; }
+    .status-aceito { background: rgba(127, 174, 92, 0.22); color: var(--positive); }
+    .vazio { color: var(--text-muted); font-size: 13px; padding: 24px 0; }
+    a { color: var(--secondary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+</style>
 </head>
 <body>
-    <h1>Radar de Vagas Jr Dev</h1>
-    <p class="subtitulo">Skills mais pedidas no mercado vs. o que eu já tenho</p>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="sweep-mini"></div>
+                <span>RADAR DE VAGAS</span>
+            </div>
+            <nav>
+                <button class="nav-item active" data-panel="mercado">Mercado vs. eu</button>
+                <button class="nav-item" data-panel="prioridades">Prioridades de estudo</button>
+                <button class="nav-item" data-panel="vagas">Vagas coletadas</button>
+                <button class="nav-item" data-panel="candidaturas">Minhas candidaturas</button>
+            </nav>
+        </aside>
 
-    <div class="grafico-container">
-        <h2>Ranking de skills</h2>
-        <canvas id="graficoRanking"></canvas>
-    </div>
+        <main>
+            <section id="panel-mercado" class="panel active">
+                <h1>Mercado vs. o que eu sei</h1>
+                <p class="contexto">As 8 skills mais pedidas, sobrepostas ao que já domino — a área que sobra é o gap.</p>
+                <div class="panel-body">
+                    <div class="panel-main"><canvas id="radarSkills"></canvas></div>
+                    <div class="rail" id="railMercado"></div>
+                </div>
+            </section>
 
-    <div class="grafico-container">
-        <h2>Gap de conhecimento</h2>
-        <canvas id="graficoGap"></canvas>
+            <section id="panel-prioridades" class="panel">
+                <h1>Prioridades de estudo</h1>
+                <p class="contexto">Skills que mais aparecem nas vagas e que ainda não tenho.</p>
+                <div class="panel-body">
+                    <div class="panel-main"><ol class="lista-gap" id="listaGap"></ol></div>
+                    <div class="rail" id="railPrioridades"></div>
+                </div>
+            </section>
+
+            <section id="panel-vagas" class="panel">
+                <h1>Vagas coletadas</h1>
+                <p class="contexto">As mais recentes, direto da Remotive e da Adzuna.</p>
+                <div class="panel-body">
+                    <div class="panel-main">
+                        <table>
+                            <thead><tr><th>Título</th><th>Empresa</th><th>Nível</th><th>Fonte</th><th></th></tr></thead>
+                            <tbody id="corpoTabelaVagas"></tbody>
+                        </table>
+                    </div>
+                    <div class="rail" id="railVagas"></div>
+                </div>
+            </section>
+
+            <section id="panel-candidaturas" class="panel">
+                <h1>Minhas candidaturas</h1>
+                <p class="contexto">Vagas que eu marquei pra acompanhar (adiciona/edita pelo /admin/ por enquanto).</p>
+                <div class="panel-body">
+                    <div class="panel-main">
+                        <table>
+                            <thead><tr><th>Vaga</th><th>Empresa</th><th>Status</th><th></th></tr></thead>
+                            <tbody id="corpoTabelaCandidaturas"></tbody>
+                        </table>
+                        <p class="vazio" id="candidaturasVazio" style="display:none;">Nenhuma candidatura registrada ainda — marca uma vaga como "Quero aplicar" pelo /admin/.</p>
+                    </div>
+                    <div class="rail" id="railCandidaturas"></div>
+                </div>
+            </section>
+        </main>
     </div>
 
     <script>
-        async function carregarRanking() {
-            const resposta = await fetch("/api/skills/ranking/");
-            const dados = await resposta.json();
-            const top = dados.slice(0, 10);
+        const NIVEL_LABEL = { junior: "Júnior", pleno: "Pleno", senior: "Sênior", nao_informado: "Não informado" };
+        const STATUS_LABEL = { quero_aplicar: "Quero aplicar", aplicado: "Aplicado", entrevista: "Em entrevista", recusado: "Recusado", aceito: "Aceito" };
+        Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
-            new Chart(document.getElementById("graficoRanking"), {
-                type: "bar",
-                data: {
-                    labels: top.map(item => item.skill__nome_normalizado),
-                    datasets: [{
-                        label: "Vagas que mencionam a skill",
-                        data: top.map(item => item.total_vagas),
-                        backgroundColor: "#4f9dde",
-                    }],
-                },
-                options: { indexAxis: "y" },
+        document.querySelectorAll(".nav-item").forEach(botao => {
+            botao.addEventListener("click", () => {
+                document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+                document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+                botao.classList.add("active");
+                document.getElementById("panel-" + botao.dataset.panel).classList.add("active");
             });
+        });
+
+        function statHTML(valor, rotulo, dim = false) {
+            return `<div class="stat"><div class="valor${dim ? " dim" : ""}">${valor}</div><div class="rotulo">${rotulo}</div></div>`;
+        }
+
+        async function contarVagas(params) {
+            const resp = await fetch("/api/vagas/?" + new URLSearchParams(params));
+            return (await resp.json()).count;
+        }
+
+        let rankingCache = [];
+        let gapCache = [];
+        let perfilCache = { count: 0, results: [] };
+
+        async function carregarRadar() {
+            const [ranking, perfil, skills, totalVagas] = await Promise.all([
+                fetch("/api/skills/ranking/").then(r => r.json()),
+                fetch("/api/perfil/").then(r => r.json()),
+                fetch("/api/skills/").then(r => r.json()),
+                contarVagas({}),
+            ]);
+            rankingCache = ranking;
+            perfilCache = perfil;
+
+            const top = ranking.slice(0, 8);
+            const maxVagas = Math.max(...top.map(i => i.total_vagas));
+            const skillsQueTenho = new Set(perfil.results.map(p => p.skill_nome));
+
+            new Chart(document.getElementById("radarSkills"), {
+                type: "radar",
+                data: {
+                    labels: top.map(i => i.skill__nome_normalizado),
+                    datasets: [
+                        {
+                            label: "Demanda no mercado",
+                            data: top.map(i => Math.round((i.total_vagas / maxVagas) * 100)),
+                            backgroundColor: "rgba(232, 163, 61, 0.25)",
+                            borderColor: "#e8a33d",
+                            pointBackgroundColor: "#e8a33d",
+                        },
+                        {
+                            label: "O que eu já tenho",
+                            data: top.map(i => skillsQueTenho.has(i.skill__nome_normalizado) ? 100 : 0),
+                            backgroundColor: "rgba(74, 155, 142, 0.15)",
+                            borderColor: "#4a9b8e",
+                            borderDash: [4, 4],
+                            pointBackgroundColor: "#4a9b8e",
+                        },
+                    ],
+                },
+                options: {
+                    scales: {
+                        r: {
+                            suggestedMin: 0, suggestedMax: 100,
+                            ticks: { display: false },
+                            grid: { color: "rgba(232, 163, 61, 0.15)" },
+                            angleLines: { color: "rgba(232, 163, 61, 0.15)" },
+                            pointLabels: { color: "#e4ded0", font: { size: 12 } },
+                        },
+                    },
+                    plugins: { legend: { labels: { color: "#7f9188" } } },
+                },
+            });
+
+            document.getElementById("railMercado").innerHTML =
+                statHTML(totalVagas, "vagas analisadas") +
+                statHTML(perfil.count, "skills no meu perfil") +
+                statHTML(skills.count, "skills catalogadas no total", true) +
+                statHTML(ranking.length ? ranking[0].skill__nome_normalizado : "—", "skill mais pedida do mercado", true);
         }
 
         async function carregarGap() {
-            const resposta = await fetch("/api/skills/gap/");
-            const dados = await resposta.json();
-            const top = dados.slice(0, 10);
+            const dados = await (await fetch("/api/skills/gap/")).json();
+            gapCache = dados;
+            const lista = document.getElementById("listaGap");
+            lista.innerHTML = "";
+            for (const item of dados.slice(0, 10)) {
+                const li = document.createElement("li");
+                li.innerHTML = `<span class="nome">${item.skill}</span><span class="contagem">${item.total_vagas} vagas</span>`;
+                lista.appendChild(li);
+            }
 
-            new Chart(document.getElementById("graficoGap"), {
-                type: "bar",
-                data: {
-                    labels: top.map(item => item.skill),
-                    datasets: [{
-                        label: "Vagas que pedem, mas eu ainda não tenho",
-                        data: top.map(item => item.total_vagas),
-                        backgroundColor: "#e07856",
-                    }],
-                },
-                options: { indexAxis: "y" },
-            });
+            const topGap = dados[0];
+            const cobertura = rankingCache.length
+                ? Math.round((perfilCache.count / rankingCache.length) * 100)
+                : 0;
+
+            document.getElementById("railPrioridades").innerHTML =
+                statHTML(dados.length, "skills em gap") +
+                (topGap ? statHTML(topGap.skill, `maior prioridade (${topGap.total_vagas} vagas)`, true) : "") +
+                statHTML(cobertura + "%", "das top skills do mercado eu já cubro");
         }
 
-        carregarRanking();
-        carregarGap();
+        async function carregarVagas() {
+            const dados = await (await fetch("/api/vagas/")).json();
+            const corpo = document.getElementById("corpoTabelaVagas");
+            corpo.innerHTML = "";
+            for (const vaga of dados.results) {
+                const linha = document.createElement("tr");
+                linha.innerHTML = `
+                    <td>${vaga.titulo}</td>
+                    <td>${vaga.empresa}</td>
+                    <td><span class="nivel nivel-${vaga.nivel}">${NIVEL_LABEL[vaga.nivel] ?? vaga.nivel}</span></td>
+                    <td>${vaga.fonte}</td>
+                    <td><a href="${vaga.url}" target="_blank">Ver vaga</a></td>
+                `;
+                corpo.appendChild(linha);
+            }
+
+            const [remotive, adzuna, junior, pleno, senior, naoInformado] = await Promise.all([
+                contarVagas({ fonte: "Remotive" }),
+                contarVagas({ fonte: "Adzuna" }),
+                contarVagas({ nivel: "junior" }),
+                contarVagas({ nivel: "pleno" }),
+                contarVagas({ nivel: "senior" }),
+                contarVagas({ nivel: "nao_informado" }),
+            ]);
+
+            document.getElementById("railVagas").innerHTML =
+                statHTML(dados.count, "vagas no total") +
+                statHTML(`${remotive} / ${adzuna}`, "Remotive / Adzuna") +
+                statHTML(junior, "vagas júnior", true) +
+                statHTML(`${pleno} / ${senior} / ${naoInformado}`, "pleno / sênior / não informado");
+        }
+
+        async function carregarCandidaturas() {
+            const dados = await (await fetch("/api/candidaturas/")).json();
+            const corpo = document.getElementById("corpoTabelaCandidaturas");
+            const vazio = document.getElementById("candidaturasVazio");
+            corpo.innerHTML = "";
+
+            if (dados.count === 0) {
+                vazio.style.display = "block";
+            } else {
+                vazio.style.display = "none";
+                for (const c of dados.results) {
+                    const linha = document.createElement("tr");
+                    linha.innerHTML = `
+                        <td>${c.vaga_titulo}</td>
+                        <td>${c.vaga_empresa}</td>
+                        <td><span class="status status-${c.status}">${STATUS_LABEL[c.status] ?? c.status}</span></td>
+                        <td><a href="${c.vaga_url}" target="_blank">Ver vaga</a></td>
+                    `;
+                    corpo.appendChild(linha);
+                }
+            }
+
+            const contagemPorStatus = {};
+            for (const c of dados.results) {
+                contagemPorStatus[c.status] = (contagemPorStatus[c.status] || 0) + 1;
+            }
+
+            document.getElementById("railCandidaturas").innerHTML =
+                statHTML(dados.count, "candidaturas no total") +
+                statHTML(contagemPorStatus.aplicado || 0, "aplicadas") +
+                statHTML(contagemPorStatus.entrevista || 0, "em entrevista", true) +
+                statHTML(contagemPorStatus.aceito || 0, "aceitas", true);
+        }
+
+        carregarRadar().then(carregarGap);
+        carregarVagas();
+        carregarCandidaturas();
     </script>
 </body>
 </html>
