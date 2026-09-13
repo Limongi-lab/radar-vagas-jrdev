@@ -14,7 +14,7 @@ Python · Django REST Framework · PostgreSQL (SQLite em dev) · pytest · Docke
 
 ```bash
 python -m venv venv
-venv\Scripts\activate          # Windows
+venv\Scripts\activate          
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_skills
@@ -35,9 +35,9 @@ docker compose up --build
 ## Coletando dados novos
 
 ```bash
-python manage.py coletar_vagas          # Remotive
-python manage.py coletar_vagas_adzuna   # Adzuna (requer chaves no .env)
-python manage.py gerar_snapshot         # snapshot do histórico de demanda
+python manage.py coletar_vagas          
+python manage.py coletar_vagas_adzuna   
+python manage.py gerar_snapshot         
 ```
 
 ## Testes
